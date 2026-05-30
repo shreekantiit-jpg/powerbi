@@ -1,0 +1,48 @@
+name: Retail ETL
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  retail-pipeline:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
+
+    - name: Install Packages
+      run: |
+        pip install -r requirements.txt
+
+    - name: Bronze Layer
+      run: |
+        python src/bronze/ingest_data.py
+
+    - name: Silver Layer
+      run: |
+        python src/silver/clean_data.py
+
+    - name: Gold Layer
+      run: |
+        python src/gold/customer_sales.py
+
+    - name: Unit Test
+      run: |
+        pytest tests/
