@@ -1,48 +1,46 @@
-name: Retail ETL
+name: Retail Data Pipeline
 
 on:
   push:
     branches:
       - main
 
+env:
+  PYTHONPATH: ${{ github.workspace }}
+
 jobs:
-
   retail-pipeline:
-
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-    - name: Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: 17
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyspark
+          pip install -r requirements.txt
 
-    - name: Install Packages
-      run: |
-        pip install -r requirements.txt
+      - name: Run Bronze Layer
+        run: |
+          python -m src.bronze.ingest_data
 
-    - name: Bronze Layer
-      run: |
-        python src/bronze/ingest_data.py
+      - name: Run Silver Layer
+        run: |
+          python -m src.silver.transform_data
 
-    - name: Silver Layer
-      run: |
-        python src/silver/clean_data.py
-
-    - name: Gold Layer
-      run: |
-        python src/gold/customer_sales.py
-
-    - name: Unit Test
-      run: |
-        pytest tests/
+      - name: Run Gold Layer
+        run: |
+          python -m src.gold.build_marts
